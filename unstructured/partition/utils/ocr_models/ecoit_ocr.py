@@ -92,7 +92,8 @@ class OCRAgentECOIT(OCRAgent):
         self.det_cluster = env_config.DOCTR_DET_CLUSTER
         logger.info(f"Instantiating text detection model, using {doctr_det_model} on {doctr_device} with {self.det_threshold} thresholding!!!")
         # Batch size is default to 1 bcz unstructured process by page not by doc, gonna change that later. 
-        self.detector = detection_predictor(arch=doctr_det_model, pretrained=True, batch_size=1, device=doctr_device)
+        self.detector = detection_predictor(arch=doctr_det_model, pretrained=True, batch_size=1)
+        self.detector.model.to(doctr_device)
         
         # Load text recognition model
         logger.info(f"Instantiating VietOCR Predictor using {env_config.VIETOCR_MODEL_NAME} on {env_config.VIETOCR_DEVICE}!!")
