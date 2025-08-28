@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 
 # Ecoit import models
 from doctr.models.detection.zoo import detection_predictor
-from doctr.models.predictor.base import _OCRPredictor
 from doctr.utils.geometry import detach_scores
 from doctr.models.builder import DocumentBuilder
 

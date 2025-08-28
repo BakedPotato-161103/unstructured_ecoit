@@ -2,4 +2,5 @@
 -c base.txt
 # Additional packages for setup OCR Agent
 vietocr
-doctr
+python-doctr
+python-doctr[viz,html,contrib]
