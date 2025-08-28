@@ -55,6 +55,8 @@ rtf_reqs = load_requirements("requirements/extra-pandoc.in")
 rst_reqs = load_requirements("requirements/extra-pandoc.in")
 tsv_reqs = load_requirements("requirements/extra-csv.in")
 xlsx_reqs = load_requirements("requirements/extra-xlsx.in")
+# Local requirements: 
+ecoit_reqs = load_requirements("requirements/ecoit.in")
 
 all_doc_reqs = list(
     set(
@@ -70,14 +72,15 @@ all_doc_reqs = list(
         + rtf_reqs
         + rst_reqs
         + tsv_reqs
-        + xlsx_reqs,
+        + xlsx_reqs
+        + ecoit_reqs,
     ),
 )
 
 
 setup(
     name="unstructured",
-    description="A library that prepares raw documents for downstream ML tasks.",
+    description="A library that prepares raw documents for downstream ML tasks. - Altered for EcoIT distribution",
     long_description=open("README.md", encoding="utf-8").read(),  # noqa: SIM115
     long_description_content_type="text/markdown",
     keywords="NLP PDF HTML CV XML parsing preprocessing",
@@ -120,6 +123,7 @@ setup(
         "rst": rst_reqs,
         "tsv": tsv_reqs,
         "xlsx": xlsx_reqs,
+        "ecoit": ecoit_reqs,
         # Legacy extra requirements
         "huggingface": load_requirements("requirements/huggingface.in"),
         "local-inference": all_doc_reqs,
