@@ -30,7 +30,6 @@ if TYPE_CHECKING:
 if "OMP_THREAD_LIMIT" not in os.environ:
     os.environ["OMP_THREAD_LIMIT"] = "1"
 
-
 class OCRAgentTesseract(OCRAgent):
     """OCR service implementation for Tesseract."""
 
@@ -56,7 +55,6 @@ class OCRAgentTesseract(OCRAgent):
             character_confidence_threshold=env_config.TESSERACT_CHARACTER_CONFIDENCE_THRESHOLD,
         )
         ocr_df = ocr_df.dropna()
-
         # tesseract performance degrades when the text height is out of the preferred zone so we
         # zoom the image (in or out depending on estimated text height) for optimum OCR results
         # but this needs to be evaluated based on actual use case as the optimum scaling also

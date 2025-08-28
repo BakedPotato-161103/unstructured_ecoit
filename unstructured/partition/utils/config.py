@@ -110,6 +110,10 @@ class ENVConfig:
     def OCR_AGENT(self) -> str:
         """OCR Agent to use"""
         return self._get_string("OCR_AGENT", OCR_AGENT_TESSERACT)
+    
+    @property
+    def TABLE_OCR_AGENT(self) -> str:
+        return self._get_string("TABLE_OCR_AGENT", OCR_AGENT_TESSERACT)
 
     @property
     def OCR_AGENT_CACHE_SIZE(self) -> int:
@@ -229,5 +233,59 @@ class ENVConfig:
         """The format for analysed pages with bboxes drawn on them. Default is 'png'."""
         return self._get_string("ANALYSIS_BBOX_FORMAT", "png")
 
+    ### EcoIT ocr agent props
+    @property
+    def ECOIT_TEXT_SPACING_RATIO(self) -> float:
+        # THe spacing to consider the
+        return self._get_float("ECOIT_TEXT_SPACING_RATIO", 0.5)
+    
+    @property
+    def ECOIT_TEXT_HEIGHT_QUANTILE(self) -> float:
+        """the quantile to check for text height"""
+        return self._get_float("ECOIT_TEXT_HEIGHT_QUANTILE", 0.5)
+    
+    
+    @property
+    def VIETOCR_MODEL_NAME(self) -> str:
+        return self._get_string("VIETOCR_MODEL_NAME", "vgg_seq2seq")
+    
+    @property
+    def VIETOCR_DEVICE(self) -> str: 
+        return self._get_string("VIETOCR_DEVICE", "cuda")
 
+    @property
+    def VIETOCR_BATCH_SIZE(self) -> int:
+        return self._get_int("VIETOCR_BATCH_SIZE", 1)
+    
+    @property
+    def VIETOCR_SORT_PATCHES(self) -> bool:
+        return self._get_bool("VIETOCR_SORT_PATCHES", True)
+    
+    @property
+    def VIETOCR_MAX_TEXT_WIDTH_RATIO(self) -> float: 
+        # Maximal length of context window for VietOCR to process
+        return self._get_float("VIETOCR_MAX_TEXT_WIDTH_RATIO", 0.5)
+    
+    @property
+    def VIETOCR_USE_BEAM_SEARCH(self) -> bool:
+        return self._get_bool("VIETOCR_USE_BEAM_SEARCH", False)
+    
+    @property
+    def DOCTR_DET_MODEL(self) -> str: 
+        return self._get_string("DOCTR_DET_MODEL", "db_resnet50")
+    
+    @property
+    def DOCTR_DEVICE(self) -> str:
+        return self._get_string("DOCTR_DEVICE", "cuda:2")
+    
+    @property
+    def DOCTR_THRESHOLD(self) -> float:
+        return self._get_float("DOCTR_THRESHOLD", 0.5)
+    
+    @property
+    def DOCTR_DET_CLUSTER(self) -> bool:
+        # To speedup inference process but may miss things. 
+        return self._get_bool("DOCTR_DET_CLUSTER", False)
+
+    
 env_config = ENVConfig()

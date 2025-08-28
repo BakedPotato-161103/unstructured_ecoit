@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import tqdm
 from typing import IO, TYPE_CHECKING, Any, List, Optional, cast
 
 import numpy as np
@@ -22,7 +23,7 @@ from unstructured.partition.pdf_image.pdfminer_processing import (
     bboxes1_is_almost_subregion_of_bboxes2,
 )
 from unstructured.partition.utils.config import env_config
-from unstructured.partition.utils.constants import OCR_AGENT_PADDLE, OCR_AGENT_TESSERACT, OCRMode
+from unstructured.partition.utils.constants import OCR_AGENT_PADDLE, OCR_AGENT_TESSERACT, OCR_AGENT_ECOIT, OCRMode
 from unstructured.partition.utils.ocr_models.ocr_interface import OCRAgent
 from unstructured.utils import requires_dependencies
 
@@ -153,7 +154,9 @@ def process_file_with_ocr(
         if is_image:
             with PILImage.open(filename) as images:
                 image_format = images.format
-                for i, image in enumerate(ImageSequence.Iterator(images)):
+                pbar = tqdm.tqdm(enumerate(ImageSequence.Iterator(images)), desc="Inferencing", leave=True, total=len(images))
+                for i, image in pbar:
+                    pbar.set_description(f"Processing page {i}")
                     image = image.convert("RGB")
                     image.format = image_format
                     extracted_regions = extracted_layout[i] if i < len(extracted_layout) else None
@@ -180,7 +183,9 @@ def process_file_with_ocr(
                     userpw=password or "",
                 )
                 image_paths = cast(List[str], _image_paths)
-                for i, image_path in enumerate(image_paths):
+                pbar = tqdm.tqdm(enumerate(image_paths), desc="Inferencing", leave=True, total=len(image_paths))
+                for i, image_path in pbar:
+                    pbar.set_description(f"Processing page {i}")
                     extracted_regions = extracted_layout[i] if i < len(extracted_layout) else None
                     with PILImage.open(image_path) as image:
                         merged_page_layout = supplement_page_layout_with_ocr(
@@ -267,7 +272,7 @@ def supplement_page_layout_with_ocr(
             language = tesseract_to_paddle_language(ocr_languages)
         _table_ocr_agent = OCRAgent.get_instance(
             ocr_agent_module=table_ocr_agent, language=language
-        )
+        ) if table_ocr_agent != ocr_agent else _ocr_agent
         from unstructured_inference.models import tables
 
         tables.load_agent()
@@ -363,7 +368,7 @@ def get_table_tokens(
                 "block_num": 0,
             }
         )
-
+    print(table_tokens)
     return table_tokens
 
 

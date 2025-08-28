@@ -222,6 +222,8 @@ def partition_pdf(
     exactly_one(filename=filename, file=file)
 
     languages = check_language_args(languages or [], ocr_languages)
+    ocr_agent = env_config.OCR_AGENT
+    table_ocr_agent = env_config.TABLE_OCR_AGENT
     return partition_pdf_or_image(
         filename=filename,
         file=file,
@@ -244,6 +246,8 @@ def partition_pdf(
         pdfminer_char_margin=pdfminer_char_margin,
         pdfminer_line_overlap=pdfminer_line_overlap,
         pdfminer_word_margin=pdfminer_word_margin,
+        ocr_agent=ocr_agent,
+        table_ocr_agent=table_ocr_agent,
         **kwargs,
     )
 
@@ -282,10 +286,10 @@ def partition_pdf_or_image(
     # function.
 
     # init ability to process .heic files
+    print(f"Using {ocr_agent} model for extraction and {table_ocr_agent} for table extraction")
     register_heif_opener()
 
     validate_strategy(strategy, is_image)
-
     last_modified = get_last_modified_date(filename) if filename else None
     pdfminer_config = PDFMinerConfig(
         line_margin=pdfminer_line_margin,
