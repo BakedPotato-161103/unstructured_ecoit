@@ -368,7 +368,6 @@ def get_table_tokens(
                 "block_num": 0,
             }
         )
-    print(table_tokens)
     return table_tokens
 
 
