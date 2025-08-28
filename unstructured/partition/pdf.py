@@ -222,8 +222,6 @@ def partition_pdf(
     exactly_one(filename=filename, file=file)
 
     languages = check_language_args(languages or [], ocr_languages)
-    ocr_agent = env_config.OCR_AGENT
-    table_ocr_agent = env_config.TABLE_OCR_AGENT
     return partition_pdf_or_image(
         filename=filename,
         file=file,
@@ -246,8 +244,6 @@ def partition_pdf(
         pdfminer_char_margin=pdfminer_char_margin,
         pdfminer_line_overlap=pdfminer_line_overlap,
         pdfminer_word_margin=pdfminer_word_margin,
-        ocr_agent=ocr_agent,
-        table_ocr_agent=table_ocr_agent,
         **kwargs,
     )
 

@@ -110,10 +110,6 @@ class ENVConfig:
     def OCR_AGENT(self) -> str:
         """OCR Agent to use"""
         return self._get_string("OCR_AGENT", OCR_AGENT_TESSERACT)
-    
-    @property
-    def TABLE_OCR_AGENT(self) -> str:
-        return self._get_string("TABLE_OCR_AGENT", OCR_AGENT_TESSERACT)
 
     @property
     def OCR_AGENT_CACHE_SIZE(self) -> int:

@@ -4,6 +4,7 @@ import os
 import tempfile
 import tqdm
 from typing import IO, TYPE_CHECKING, Any, List, Optional, cast
+from collections.abc import Iterable
 
 import numpy as np
 import pdf2image
@@ -154,7 +155,7 @@ def process_file_with_ocr(
         if is_image:
             with PILImage.open(filename) as images:
                 image_format = images.format
-                pbar = tqdm.tqdm(enumerate(ImageSequence.Iterator(images)), desc="Inferencing", leave=True, total=len(images))
+                pbar = tqdm.tqdm(enumerate(ImageSequence.Iterator(images)), desc="Inferencing", leave=True, total=1)
                 for i, image in pbar:
                     pbar.set_description(f"Processing page {i}")
                     image = image.convert("RGB")
