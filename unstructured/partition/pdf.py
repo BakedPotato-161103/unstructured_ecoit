@@ -324,7 +324,7 @@ def partition_pdf_or_image(
         extract_images_in_pdf=extract_images_in_pdf,
         extract_image_block_types=extract_image_block_types,
     )
-
+    print(strategy)
     if file is not None:
         file.seek(0)
 
@@ -388,6 +388,7 @@ def partition_pdf_or_image(
                 metadata_last_modified=metadata_last_modified or last_modified,
                 starting_page_number=starting_page_number,
                 password=password,
+                ocr_agent=ocr_agent,
                 **kwargs,
             )
             out_elements = _process_uncategorized_text_elements(elements)
@@ -662,7 +663,7 @@ def _partition_pdf_or_image_local(
             if pdf_text_extractable
             else ([], [])
         )
-
+        # import IPython; IPython.embed()
         if analysis:
             if not analyzed_image_output_dir_path:
                 if env_config.GLOBAL_WORKING_DIR_ENABLED:
@@ -955,14 +956,14 @@ def _partition_pdf_or_image_with_ocr_from_image(
     include_page_breaks: bool = False,
     metadata_last_modified: Optional[str] = None,
     sort_mode: str = SORT_MODE_XY_CUT,
+    ocr_agent: str = OCR_AGENT_TESSERACT,
     **kwargs: Any,
 ) -> list[Element]:
     """Extract `unstructured` elements from an image using OCR and perform partitioning."""
 
     from unstructured.partition.utils.ocr_models.ocr_interface import OCRAgent
 
-    ocr_agent = OCRAgent.get_agent(language=ocr_languages)
-
+    ocr_agent = OCRAgent.get_instance(ocr_agent_module=ocr_agent, language=ocr_languages)
     # NOTE(christine): `pytesseract.image_to_string()` returns sorted text
     if ocr_agent.is_text_sorted():
         sort_mode = SORT_MODE_DONT

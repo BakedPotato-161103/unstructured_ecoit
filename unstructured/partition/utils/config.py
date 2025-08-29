@@ -231,6 +231,9 @@ class ENVConfig:
 
     ### EcoIT ocr agent props
     @property
+    def ECOIT_PARSE_LINE(self) -> bool: 
+        return self._get_bool("ECOIT_PARSE_LINE", True)
+    @property
     def ECOIT_TEXT_SPACING_RATIO(self) -> float:
         # THe spacing to consider the
         return self._get_float("ECOIT_TEXT_SPACING_RATIO", 0.5)

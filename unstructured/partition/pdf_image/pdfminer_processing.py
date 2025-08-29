@@ -555,7 +555,7 @@ def bboxes1_is_almost_subregion_of_bboxes2(
     inter_area, boxa_area, boxb_area = areas_of_boxes_and_intersection_area(
         coords1, coords2, round_to=round_to
     )
-
+    # lIOU
     return (inter_area / np.maximum(boxa_area, EPSILON_AREA) > threshold) & (
         boxa_area <= boxb_area.T
     )

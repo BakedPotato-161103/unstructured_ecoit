@@ -68,12 +68,21 @@ class Clause:
         return float(end[2] - start[0])
     def __len__(self):
         return len(self.words)
-    
+
+# Adding singleton to avoid multiple initialization
+def singleton(class_):
+    instances = {}
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+    return getinstance
+
+@singleton
 class OCRAgentECOIT(OCRAgent):
     """ The OCRAgent consists of 2 components: a detector and a recognizer, is sequentially inferred
         Will extend and abtract to any 2-step OCRAgent w/ conditions
     """
-
     def __init__(self, language="vie"):
         self.doc_builder = DocumentBuilder()
         # Default to Vietnamese since its ermmm for probation
@@ -83,6 +92,7 @@ class OCRAgentECOIT(OCRAgent):
     def load(self):
         # Import Clause height quantile from here
         Clause.h_quantile = env_config.ECOIT_TEXT_HEIGHT_QUANTILE
+        self.parse_line = env_config.ECOIT_PARSE_LINE
         # Follows initialization pipeline of Unstructured w/ env_var for config - 
         # kinda risky but it is the best practice we've known
         # Load text detection model
@@ -106,6 +116,7 @@ class OCRAgentECOIT(OCRAgent):
         self.rec_ratio = config['dataset']['image_max_width'] / config['dataset']['image_height'] * env_config.VIETOCR_MAX_TEXT_WIDTH_RATIO  
         self.spacing_ratio = env_config.ECOIT_TEXT_SPACING_RATIO
         
+        
 
     def forward(self, image: PILImage.Image):
         trace_logger.detail("Performing text detection")
@@ -117,7 +128,7 @@ class OCRAgentECOIT(OCRAgent):
         # We need to agree on the norm of minimal height. ? By mean height ?? May be takes the 2-nd quantile to ensure unstable symbols.
         det_boxes_cxcywh = xyxy2cxcywh(det_boxes.copy())
         minimal_cell_height = np.quantile(det_boxes_cxcywh[:, -1], 0.5)
-        spacing = minimal_cell_height * self.spacing_ratio
+        spacing = minimal_cell_height * self.spacing_ratio 
         det_boxes_cxcywh[:, -1] = np.maximum(det_boxes_cxcywh[:, -1], minimal_cell_height)
         det_boxes = cxcywh2xyxy(det_boxes_cxcywh)
         # Get pseudo layout for word clustering.
@@ -179,7 +190,44 @@ class OCRAgentECOIT(OCRAgent):
         # Since we assume that the page is straight, orientation is unneeded
         # Return a DocTR document object. --> Get the first page as Unstructured Operate page-wise.
         # Arguments list is parsed following DocTR function format.
-        return {'boxes': (real_boxes).tolist(), 'scores': det_scores.tolist(), 'preds': list(det_words)}
+        output_boxes, output_words = [], []
+        if self.parse_line:
+            if not self.det_cluster:
+                
+                layout = self.doc_builder(
+                                            [np_image],
+                                            [real_boxes],
+                                            [det_scores],
+                                            [det_words],
+                                            [np_image.shape[:2]],
+                                            [[{"value": 0, "confidence": None} for i in range(len(det_boxes))]],
+                                            None,
+                                            None,
+                                            ).pages[0]
+                for block in layout.blocks:
+                    for line in block.lines:
+                        value, words, clause = 0, [], Clause()
+                        for word in line.words:
+                            ((x1, y1), (x2, y2)) = word.geometry
+                            words.append(word.value)
+                            value += word.confidence
+                            clause.append([x1, y1, x2, y2], word.objectness_score)
+                        output_boxes.append(clause.parse()[0][:-1])
+                        output_words.append((" ".join(words), value / len(words)) )
+            else: 
+                st = 0
+                for checkpoint in line_indexes:
+                    clause = Clause()
+                    clause.words = real_boxes[st:checkpoint]
+                    clause.scores = det_scores[st:checkpoint].sum()
+                    output_boxes.append(clause.parse()[0][:-1])
+                    output_words.append((" ".join([det_words[i][0] for i in range(st, checkpoint)]), 
+                                         np.mean([det_words[i][1] for i in range(st, checkpoint)])))
+        else:
+            output_boxes = real_boxes.tolist()
+            output_words = list(det_words)
+
+        return {'boxes': output_boxes, 'preds': output_words}
         # return  self.doc_builder(
         #                         [np_image],
         #                         [det_boxes],
@@ -193,6 +241,7 @@ class OCRAgentECOIT(OCRAgent):
     
     # Make sure to use with copy of the bboxes to prevent overwriting ? Or just create a dup :) 
     def crop_patches(self, image: np.ndarray, bboxes: np.ndarray, issorted: bool = True, padding=0):
+        
         if isinstance(padding, int):
             padding = (padding, padding)
         bboxes = bboxes.copy()
@@ -214,9 +263,11 @@ class OCRAgentECOIT(OCRAgent):
         indexes, patches = zip(*patches)
         return bboxes, indexes, patches
 
+    @requires_dependencies("unstructured_inference")
     def get_layout_elements_from_image(self, image: PILImage.Image) -> LayoutElements:
-        ocr_regions = self.get_layout_from_image(image)
+        from unstructured_inference.inference.layoutelement import LayoutElements
 
+        ocr_regions = self.get_layout_from_image(image)
         # NOTE(christine): For paddle, there is no difference in `ocr_layout` and `ocr_text` in
         # terms of grouping because we get ocr_text from `ocr_layout, so the first two grouping
         # and merging steps are not necessary.
@@ -241,7 +292,6 @@ class OCRAgentECOIT(OCRAgent):
         from unstructured.partition.pdf_image.inference_utils import build_text_region_from_coords
         text_regions: list[TextRegions] = []
         for box, word in zip(ocr_data['boxes'], ocr_data['preds']):
-            # print(box, word)
             reg = build_text_region_from_coords(
                         *box, 
                         text=word[0], 
