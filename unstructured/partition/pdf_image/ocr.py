@@ -161,6 +161,7 @@ def process_file_with_ocr(
                     image = image.convert("RGB")
                     image.format = image_format
                     extracted_regions = extracted_layout[i] if i < len(extracted_layout) else None
+                    
                     merged_page_layout = supplement_page_layout_with_ocr(
                         page_layout=out_layout.pages[i],
                         image=image,
@@ -172,6 +173,8 @@ def process_file_with_ocr(
                         ocr_layout_dumper=ocr_layout_dumper,
                         table_ocr_agent=table_ocr_agent,
                     )
+                    # Debugging
+                    # print("\n".join([el.text for el in merged_page_layout.elements]))
                     merged_page_layouts.append(merged_page_layout)
                 return DocumentLayout.from_pages(merged_page_layouts)
         else:
@@ -200,6 +203,7 @@ def process_file_with_ocr(
                             ocr_layout_dumper=ocr_layout_dumper,
                             table_ocr_agent=table_ocr_agent,
                         )
+                        # print("\n".join([el.text for el in merged_page_layout.elements]))
                         merged_page_layouts.append(merged_page_layout)
                 return DocumentLayout.from_pages(merged_page_layouts)
     except Exception as e:
@@ -233,6 +237,7 @@ def supplement_page_layout_with_ocr(
     if ocr_agent == OCR_AGENT_PADDLE:
         language = tesseract_to_paddle_language(ocr_languages)
     _ocr_agent = OCRAgent.get_instance(ocr_agent_module=ocr_agent, language=language)
+    print(type(_ocr_agent))
     if ocr_mode == OCRMode.FULL_PAGE.value:
         ocr_layout = _ocr_agent.get_layout_from_image(image)
         if ocr_layout_dumper:
@@ -349,7 +354,6 @@ def get_table_tokens(
     ocr_agent: OCRAgent,
 ) -> List[dict[str, Any]]:
     """Get OCR tokens from either paddleocr or tesseract"""
-
     ocr_layout = ocr_agent.get_layout_from_image(image=table_element_image)
     table_tokens = []
     for i, text in enumerate(ocr_layout.texts):
@@ -395,8 +399,8 @@ def merge_out_layout_with_ocr_layout(
         return out_layout
 
     invalid_text_indices = [i for i, text in enumerate(out_layout.texts) if not valid_text(text)]
+    # print("Invalid text indices:", [out_layout.texts[i] for i in invalid_text_indices])
     out_layout.texts = out_layout.texts.astype(object)
-
     for idx in invalid_text_indices:
         out_layout.texts[idx] = aggregate_embedded_text_by_block(
             target_region=out_layout.slice([idx]),
@@ -463,8 +467,11 @@ def supplement_layout_with_ocr_elements(
      layout elements.
     - The env_config `OCR_LAYOUT_SUBREGION_THRESHOLD` is used to specify the subregion matching
      threshold.
-    """
 
+    *** ECOIT editorial: Since pdfminer could not handle Vietnamese texts properly, the content 
+        The content of original layout will be altered to merge of OCR-derived contents. 
+    """
+    
     from unstructured_inference.inference.layoutelement import LayoutElements
 
     from unstructured.partition.pdf_image.inference_utils import (
@@ -477,16 +484,25 @@ def supplement_layout_with_ocr_elements(
         else:
             ocr_regions_to_add = ocr_layout
     else:
-        mask = (
-            ~bboxes1_is_almost_subregion_of_bboxes2(
+        # SRC, TGT
+        src_tgt_overlap = bboxes1_is_almost_subregion_of_bboxes2(
                 ocr_layout.element_coords, layout.element_coords, subregion_threshold
             )
+        
+        # print(layout.element_coords.shape, ocr_layout.element_coords.shape, src_tgt_overlap.shape)
+        src_mask = (
+            ~src_tgt_overlap
             .sum(axis=1)
             .astype(bool)
         )
-
+        # Replace original layouts content with OCR derived content. 
+        # N, 2
+        tgt_groups = [np.where(src_tgt_overlap[:, i] > 0)[0] for i in range(src_tgt_overlap.shape[1])]
+        tgt_texts = [' '.join(ocr_layout.slice(mask).texts.tolist()) for mask in tgt_groups]
+        print(tgt_texts)
+        layout.texts = np.array(tgt_texts)
         # add ocr regions that are not covered by layout
-        ocr_regions_to_add = ocr_layout.slice(mask)
+        ocr_regions_to_add = ocr_layout.slice(src_mask)
 
     if len(ocr_regions_to_add):
         ocr_elements_to_add = build_layout_elements_from_ocr_regions(ocr_regions_to_add)

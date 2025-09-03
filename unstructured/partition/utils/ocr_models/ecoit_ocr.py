@@ -152,18 +152,16 @@ class OCRAgentECOIT(OCRAgent):
                     pose, clause = 0, Clause() 
                     for word in line.words:
                         ((x1, y1), (x2, y2)) = word.geometry
-                        if (x2 - x1) / minimal_cell_height <= 1:
-                            concat_boxes.extend(clause.parse())
-                            clause.reset()
-                            concat_boxes.append([x1, y1, x2, y2, word.objectness_score]) 
-                            continue
-                        if (clause.length() / minimal_cell_height > self.rec_ratio) or ((x1 - pose > spacing) and (len(clause) > 0)):
-                            # print(f"Ratio {clause.length() / minimal_cell_height} too big for {self.rec_ratio} or block is {x1 - pose} far from {spacing}") 
-                            concat_boxes.extend(clause.parse())
-                            clause.reset()
+                        short_word = (x2 - x1) / minimal_cell_height <= 1
                         clause.append([x1, y1, x2, y2], word.objectness_score)
                         # Hope that this x2 is not reference :) 
                         pose = x2
+                        if (clause.length() / minimal_cell_height > self.rec_ratio) or ((x1 - pose > spacing) and (len(clause) > 0)) or not short_word:
+                            # print(f"Ratio {clause.length() / minimal_cell_height} too big for {self.rec_ratio} or block is {x1 - pose} far from {spacing}") 
+                            if len(clause.words) > 0:
+                                concat_boxes.extend(clause.parse())
+                                clause.reset()
+                        # Add this for comprehension
                     # Directly parse to contents since not lock parsing. 
                     concat_boxes.extend(clause.parse()) 
                     line_indexes.append(len(concat_boxes))
@@ -176,13 +174,13 @@ class OCRAgentECOIT(OCRAgent):
                                                     np_image.copy(), 
                                                     det_boxes.copy(), 
                                                     issorted=env_config.VIETOCR_SORT_PATCHES,
-                                                    padding=2
+                                                    padding=0
                                                     )
         words, probs = [], []
         with logging_redirect_tqdm():
             for i in tqdm.tqdm(range(0, len(patches), self.rec_batch_size), desc="Recognition processing", leave=False):
                 rec_res = self.recognizer.predict_batch(patches[i:min(i+self.rec_batch_size, len(patches))], return_prob=True)
-                words.extend(rec_res[0])
+                words.extend([w.strip() for w in rec_res[0]])
                 probs.extend(rec_res[1])
         # Reorder the recognition to align with detection ordering
         det_words = list(zip(list(zip(words, probs)), patch_indexes))
@@ -193,7 +191,6 @@ class OCRAgentECOIT(OCRAgent):
         output_boxes, output_words = [], []
         if self.parse_line:
             if not self.det_cluster:
-                
                 layout = self.doc_builder(
                                             [np_image],
                                             [real_boxes],
@@ -223,11 +220,14 @@ class OCRAgentECOIT(OCRAgent):
                     output_boxes.append(clause.parse()[0][:-1])
                     output_words.append((" ".join([det_words[i][0] for i in range(st, checkpoint)]), 
                                          np.mean([det_words[i][1] for i in range(st, checkpoint)])))
+                    st = checkpoint
         else:
             output_boxes = real_boxes.tolist()
             output_words = list(det_words)
 
         return {'boxes': output_boxes, 'preds': output_words}
+    
+        # DocBuilder formatting 
         # return  self.doc_builder(
         #                         [np_image],
         #                         [det_boxes],

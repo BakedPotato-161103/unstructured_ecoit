@@ -232,7 +232,7 @@ class ENVConfig:
     ### EcoIT ocr agent props
     @property
     def ECOIT_PARSE_LINE(self) -> bool: 
-        return self._get_bool("ECOIT_PARSE_LINE", True)
+        return self._get_bool("ECOIT_PARSE_LINE", False)
     @property
     def ECOIT_TEXT_SPACING_RATIO(self) -> float:
         # THe spacing to consider the
@@ -242,7 +242,6 @@ class ENVConfig:
     def ECOIT_TEXT_HEIGHT_QUANTILE(self) -> float:
         """the quantile to check for text height"""
         return self._get_float("ECOIT_TEXT_HEIGHT_QUANTILE", 0.5)
-    
     
     @property
     def VIETOCR_MODEL_NAME(self) -> str:
