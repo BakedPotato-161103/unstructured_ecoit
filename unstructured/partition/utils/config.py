@@ -285,5 +285,9 @@ class ENVConfig:
         # To speedup inference process but may miss things. 
         return self._get_bool("DOCTR_DET_CLUSTER", False)
 
+    @property
+    def TEXT_MERGE_MODE(self) -> str:
+        return self._get_string("TEXT_MERGE_MODE", "both")
+
     
 env_config = ENVConfig()

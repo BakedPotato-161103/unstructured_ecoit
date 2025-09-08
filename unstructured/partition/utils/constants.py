@@ -27,6 +27,11 @@ SORT_MODE_XY_CUT = "xy-cut"
 SORT_MODE_BASIC = "basic"
 SORT_MODE_DONT = "dont"
 
+TEXT_MERGE_OCR_ONLY = "ocr"
+TEXT_MERGE_PDFMINER_ONLY = "pdfminer"
+TEXT_MERGE_BOTH = "both"
+
+
 OCR_AGENT_TESSERACT_OLD = "tesseract"
 OCR_AGENT_PADDLE_OLD = "paddle"
 

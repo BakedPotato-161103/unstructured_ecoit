@@ -84,7 +84,7 @@ class OCRAgentECOIT(OCRAgent):
         Will extend and abtract to any 2-step OCRAgent w/ conditions
     """
     def __init__(self, language="vie"):
-        self.doc_builder = DocumentBuilder()
+        self.doc_builder = DocumentBuilder(paragraph_break=0.02)
         # Default to Vietnamese since its ermmm for probation
         self.language = "vie"
         self.load()
@@ -152,7 +152,7 @@ class OCRAgentECOIT(OCRAgent):
                     pose, clause = 0, Clause() 
                     for word in line.words:
                         ((x1, y1), (x2, y2)) = word.geometry
-                        short_word = (x2 - x1) / minimal_cell_height <= 1
+                        short_word = (x2 - x1) / minimal_cell_height <= 1.5
                         clause.append([x1, y1, x2, y2], word.objectness_score)
                         # Hope that this x2 is not reference :) 
                         pose = x2

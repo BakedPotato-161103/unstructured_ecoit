@@ -73,7 +73,6 @@ all_doc_reqs = list(
         + rst_reqs
         + tsv_reqs
         + xlsx_reqs
-        + ecoit_reqs,
     ),
 )
 

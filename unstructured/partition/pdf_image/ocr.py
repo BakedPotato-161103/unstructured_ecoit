@@ -24,7 +24,7 @@ from unstructured.partition.pdf_image.pdfminer_processing import (
     bboxes1_is_almost_subregion_of_bboxes2,
 )
 from unstructured.partition.utils.config import env_config
-from unstructured.partition.utils.constants import OCR_AGENT_PADDLE, OCR_AGENT_TESSERACT, OCR_AGENT_ECOIT, OCRMode
+from unstructured.partition.utils.constants import OCR_AGENT_PADDLE, OCR_AGENT_TESSERACT, OCR_AGENT_ECOIT, OCRMode, TEXT_MERGE_BOTH, TEXT_MERGE_OCR_ONLY, TEXT_MERGE_PDFMINER_ONLY
 from unstructured.partition.utils.ocr_models.ocr_interface import OCRAgent
 from unstructured.utils import requires_dependencies
 
@@ -443,6 +443,7 @@ def supplement_layout_with_ocr_elements(
     layout: LayoutElements,
     ocr_layout: TextRegions,
     subregion_threshold: float = env_config.OCR_LAYOUT_SUBREGION_THRESHOLD,
+    merge_mode: str = env_config.TEXT_MERGE_MODE
 ) -> LayoutElements:
     """
     Supplement the existing layout with additional OCR-derived elements.
@@ -497,10 +498,14 @@ def supplement_layout_with_ocr_elements(
         )
         # Replace original layouts content with OCR derived content. 
         # N, 2
-        tgt_groups = [np.where(src_tgt_overlap[:, i] > 0)[0] for i in range(src_tgt_overlap.shape[1])]
-        tgt_texts = [' '.join(ocr_layout.slice(mask).texts.tolist()) for mask in tgt_groups]
-        print(tgt_texts)
-        layout.texts = np.array(tgt_texts)
+        if merge_mode != TEXT_MERGE_PDFMINER_ONLY:
+            tgt_groups = [np.where(src_tgt_overlap[:, i] > 0)[0] for i in range(src_tgt_overlap.shape[1])]
+            tgt_texts = [' '.join(ocr_layout.slice(mask).texts.tolist()) for mask in tgt_groups]
+            if merge_mode == TEXT_MERGE_BOTH:
+                # Make an unique separator to merge PDFMiner and OCR text 
+                tgt_texts = [f"{tgt_text}\t/#@#/\t{layout_text}" for tgt_text, layout_text in zip(tgt_texts, layout.texts)]
+            layout.texts = np.array(tgt_texts)
+
         # add ocr regions that are not covered by layout
         ocr_regions_to_add = ocr_layout.slice(src_mask)
 
