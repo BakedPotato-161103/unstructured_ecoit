@@ -2,7 +2,7 @@
 -c base.txt
 # Additional packages for setup OCR Agent
 # The 2.7.1 is for compatibility for CuDnn 9.5.1 so that we can use both Paddle and Pytorch Concurrently.
-pytorch<=2.7.1
+# pytorch
 vietocr
 python-doctr
 python-doctr[viz,html,contrib]
