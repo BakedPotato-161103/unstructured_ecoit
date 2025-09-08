@@ -237,7 +237,7 @@ def supplement_page_layout_with_ocr(
     if ocr_agent == OCR_AGENT_PADDLE:
         language = tesseract_to_paddle_language(ocr_languages)
     _ocr_agent = OCRAgent.get_instance(ocr_agent_module=ocr_agent, language=language)
-    print(type(_ocr_agent))
+    # print(type(_ocr_agent))
     if ocr_mode == OCRMode.FULL_PAGE.value:
         ocr_layout = _ocr_agent.get_layout_from_image(image)
         if ocr_layout_dumper:
