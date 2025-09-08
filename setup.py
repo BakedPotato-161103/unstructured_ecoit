@@ -122,7 +122,7 @@ setup(
         "rst": rst_reqs,
         "tsv": tsv_reqs,
         "xlsx": xlsx_reqs,
-        "ecoit": ecoit_reqs,
+        "ecoit": load_requirements("requirements/ecoit.in"),
         # Legacy extra requirements
         "huggingface": load_requirements("requirements/huggingface.in"),
         "local-inference": all_doc_reqs,
