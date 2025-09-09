@@ -279,6 +279,10 @@ def supplement_page_layout_with_ocr(
         _table_ocr_agent = OCRAgent.get_instance(
             ocr_agent_module=table_ocr_agent, language=language
         ) if table_ocr_agent != ocr_agent else _ocr_agent
+        # Disable all parsing arguments if using ECOIT agent
+        if table_ocr_agent == OCR_AGENT_ECOIT:
+            _table_ocr_agent.parse_line = False
+            _table_ocr_agent.det_cluster = False
         from unstructured_inference.models import tables
 
         tables.load_agent()
