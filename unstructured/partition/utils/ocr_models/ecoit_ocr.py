@@ -18,6 +18,7 @@ from unstructured.logger import logger, trace_logger
 from unstructured.partition.utils.config import env_config
 from unstructured.partition.utils.constants import Source
 from unstructured.documents.elements import ElementType
+from unstructured.partition.utils import sort_text_regions
 
 from unstructured.partition.utils.ocr_models.ocr_interface import OCRAgent
 from unstructured.utils import requires_dependencies
@@ -282,7 +283,7 @@ class OCRAgentECOIT(OCRAgent):
         # Follows paddle_ocr.py format
         ocr_data = self.forward(image)
         ocr_regions = self.parse_data(ocr_data)
-        return ocr_regions
+        return sort_text_regions(ocr_regions)
 
     @requires_dependencies("unstructured_inference")
     def parse_data(self, ocr_data):
