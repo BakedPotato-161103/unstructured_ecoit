@@ -12,5 +12,5 @@ google-cloud-vision
 effdet
 # Do not move to constraints.in, otherwise unstructured-inference will not be upgraded
 # when unstructured library is.
-unstructured-inference>=1.0.5
+unstructured-inference @ git+https://github.com/BakedPotato-161103/unstructured-inference_ecoit.git
 unstructured.pytesseract>=0.3.12

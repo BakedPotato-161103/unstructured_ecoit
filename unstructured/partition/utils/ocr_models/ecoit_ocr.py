@@ -18,7 +18,7 @@ from unstructured.logger import logger, trace_logger
 from unstructured.partition.utils.config import env_config
 from unstructured.partition.utils.constants import Source
 from unstructured.documents.elements import ElementType
-from unstructured.partition.utils import sort_text_regions
+from unstructured.partition.utils.sorting import sort_text_regions
 
 from unstructured.partition.utils.ocr_models.ocr_interface import OCRAgent
 from unstructured.utils import requires_dependencies
@@ -88,6 +88,7 @@ class OCRAgentECOIT(OCRAgent):
         self.doc_builder = DocumentBuilder(paragraph_break=0.02)
         # Default to Vietnamese since its ermmm for probation
         self.language = "vie"
+        self.table_mode = False
         self.load()
         
     def load(self):
@@ -133,41 +134,44 @@ class OCRAgentECOIT(OCRAgent):
         det_boxes_cxcywh[:, -1] = np.maximum(det_boxes_cxcywh[:, -1], minimal_cell_height)
         det_boxes = cxcywh2xyxy(det_boxes_cxcywh)
         # Get pseudo layout for word clustering.
-        if self.det_cluster is True:
-            trace_logger.detail("Sorting bounding boxes and merge to patches")
-            layout = self.doc_builder(
-                                    [np_image],
-                                    [det_boxes],
-                                    [det_scores],
-                                    [[["-", 0.9] for _ in range(det_boxes.shape[0])]],
-                                    [np_image.shape[:2]],
-                                    [[{"value": 0, "confidence": None} for i in range(len(det_boxes))]],
-                                    None,
-                                    None,
-                                    ).pages[0]
-            # Cluster text boxes based on their spacial distance, keep track of line to append \n characters.
-            concat_boxes= []
-            line_indexes = []
-            for block in layout.blocks:
-                for line in block.lines:
-                    pose, clause = 0, Clause() 
-                    for word in line.words:
-                        ((x1, y1), (x2, y2)) = word.geometry
-                        short_word = (x2 - x1) / minimal_cell_height <= 1.5
-                        clause.append([x1, y1, x2, y2], word.objectness_score)
-                        # Hope that this x2 is not reference :) 
-                        pose = x2
-                        if (clause.length() / minimal_cell_height > self.rec_ratio) or ((x1 - pose > spacing) and (len(clause) > 0)) or not short_word:
-                            # print(f"Ratio {clause.length() / minimal_cell_height} too big for {self.rec_ratio} or block is {x1 - pose} far from {spacing}") 
-                            if len(clause.words) > 0:
-                                concat_boxes.extend(clause.parse())
-                                clause.reset()
-                        # Add this for comprehension
-                    # Directly parse to contents since not lock parsing. 
-                    concat_boxes.extend(clause.parse()) 
-                    line_indexes.append(len(concat_boxes))
-            concat_boxes = np.array(concat_boxes)
-            det_boxes, det_scores = concat_boxes[:, :-1], concat_boxes[:, -1]
+        
+        trace_logger.detail("Sorting bounding boxes and merge to patches")
+        layout = self.doc_builder(
+                                [np_image],
+                                [det_boxes],
+                                [det_scores],
+                                [[["-", 0.9] for _ in range(det_boxes.shape[0])]],
+                                [np_image.shape[:2]],
+                                [[{"value": 0, "confidence": None} for i in range(len(det_boxes))]],
+                                None,
+                                None,
+                                ).pages[0]
+        # Cluster text boxes based on their spacial distance, keep track of line to append \n characters.
+        concat_boxes= []
+        line_indexes = []
+        for block in layout.blocks:
+            for line in block.lines:
+                pose, clause = 0, Clause() 
+                for word in line.words:
+                    ((x1, y1), (x2, y2)) = word.geometry
+                    short_word = (x2 - x1) / minimal_cell_height <= 1.5
+                    clause.append([x1, y1, x2, y2], word.objectness_score)
+                    # Hope that this x2 is not reference :) 
+                    pose = x2
+                    if ((clause.length() / minimal_cell_height > self.rec_ratio) \
+                        or ((x1 - pose > spacing) and (len(clause) > 0)) \
+                                or not self.det_cluster) \
+                                    and not short_word \
+                                        or self.table_mode:
+                        # print(f"Ratio {clause.length() / minimal_cell_height} too big for {self.rec_ratio} or block is {x1 - pose} far from {spacing}") 
+                            concat_boxes.extend(clause.parse())
+                            clause.reset()
+                    # Add this for comprehension
+                # Directly parse to contents since not lock parsing. 
+                concat_boxes.extend(clause.parse()) 
+                line_indexes.append(len(concat_boxes))
+        concat_boxes = np.array(concat_boxes)
+        det_boxes, det_scores = concat_boxes[:, :-1], concat_boxes[:, -1]
         # Crop patches
         trace_logger.detail("Preparing for recognition inference")
         # Get concrete boxes instead of proportional ones.
@@ -283,7 +287,7 @@ class OCRAgentECOIT(OCRAgent):
         # Follows paddle_ocr.py format
         ocr_data = self.forward(image)
         ocr_regions = self.parse_data(ocr_data)
-        return sort_text_regions(ocr_regions)
+        return ocr_regions
 
     @requires_dependencies("unstructured_inference")
     def parse_data(self, ocr_data):

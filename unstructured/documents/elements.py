@@ -205,6 +205,7 @@ class ElementMetadata:
     signature: Optional[str]
 
     # -- used for Table elements to capture rows/col structure --
+    ocr_text: Optional[str]
     text_as_html: Optional[str]
     table_as_cells: Optional[dict[str, str | int]]
     url: Optional[str]
@@ -249,6 +250,7 @@ class ElementMetadata:
         sent_to: Optional[list[str]] = None,
         signature: Optional[str] = None,
         subject: Optional[str] = None,
+        ocr_text: Optional[str] = None,
         table_as_cells: Optional[dict[str, str | int]] = None,
         text_as_html: Optional[str] = None,
         url: Optional[str] = None,
@@ -294,6 +296,7 @@ class ElementMetadata:
         self.sent_to = sent_to
         self.signature = signature
         self.subject = subject
+        self.ocr_text = ocr_text
         self.text_as_html = text_as_html
         self.table_as_cells = table_as_cells
         self.url = url

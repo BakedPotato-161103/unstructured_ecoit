@@ -34,10 +34,9 @@ if TYPE_CHECKING:
     from unstructured_inference.inference.layoutelement import LayoutElement, LayoutElements
     from unstructured_inference.models.tables import UnstructuredTableTransformerModel
 
-
 def process_data_with_ocr(
     data: bytes | IO[bytes],
-    out_layout: "DocumentLayout",
+    out_layout:"DocumentLayout",
     extracted_layout: List[List["TextRegion"]],
     is_image: bool = False,
     infer_table_structure: bool = False,
@@ -101,7 +100,6 @@ def process_data_with_ocr(
         )
 
     return merged_layouts
-
 
 @requires_dependencies("unstructured_inference")
 def process_file_with_ocr(
@@ -265,6 +263,7 @@ def supplement_page_layout_with_ocr(
             # the text extraced from OCR for individual elements
             text_from_ocr = _ocr_agent.get_text_from_image(cropped_image)
             page_layout.elements_array.texts[i] = text_from_ocr
+            page_layout.elements_array.ocr_texts[i] = text_from_ocr
     else:
         raise ValueError(
             "Invalid OCR mode. Parameter `ocr_mode` "
@@ -281,8 +280,7 @@ def supplement_page_layout_with_ocr(
         ) if table_ocr_agent != ocr_agent else _ocr_agent
         # Disable all parsing arguments if using ECOIT agent
         if table_ocr_agent == OCR_AGENT_ECOIT:
-            _table_ocr_agent.parse_line = False
-            _table_ocr_agent.det_cluster = False
+            _table_ocr_agent.table_mode = True
         from unstructured_inference.models import tables
 
         tables.load_agent()
@@ -296,7 +294,8 @@ def supplement_page_layout_with_ocr(
             ocr_agent=_table_ocr_agent,
             extracted_regions=extracted_regions,
         )
-
+        if table_ocr_agent == OCR_AGENT_ECOIT:
+            _table_ocr_agent.table_mode = False
     return page_layout
 
 
@@ -323,6 +322,17 @@ def supplement_element_with_table_extraction(
     table_ele_indices = np.where(elements.element_class_ids == table_id)[0]
     table_elements = elements.slice(table_ele_indices)
     padding = env_config.TABLE_IMAGE_CROP_PAD
+    if env_config.TABLE_CLEAN_TEXT: 
+        src_tgt_overlap = bboxes1_is_almost_subregion_of_bboxes2(
+                extracted_regions.element_coords, table_elements.element_coords, 0.8
+            )
+        src_mask = (
+            ~src_tgt_overlap
+            .sum(axis=1)
+            .astype(bool)
+        )
+        extracted_regions = extracted_regions.slice(src_mask)
+        
     for i, element_coords in enumerate(table_elements.element_coords):
         cropped_image = image.crop(
             (
@@ -379,7 +389,6 @@ def get_table_tokens(
         )
     return table_tokens
 
-
 def merge_out_layout_with_ocr_layout(
     out_layout: LayoutElements,
     ocr_layout: TextRegions,
@@ -428,7 +437,6 @@ def aggregate_ocr_text_by_block(
 ) -> Optional[str]:
     """Extracts the text aggregated from the regions of the ocr layout that lie within the given
     block."""
-
     extracted_texts = []
 
     for ocr_region in ocr_layout:
@@ -505,10 +513,7 @@ def supplement_layout_with_ocr_elements(
         if merge_mode != TEXT_MERGE_PDFMINER_ONLY:
             tgt_groups = [np.where(src_tgt_overlap[:, i] > 0)[0] for i in range(src_tgt_overlap.shape[1])]
             tgt_texts = [' '.join(ocr_layout.slice(mask).texts.tolist()) for mask in tgt_groups]
-            if merge_mode == TEXT_MERGE_BOTH:
-                # Make an unique separator to merge PDFMiner and OCR text 
-                tgt_texts = [f"{tgt_text}\t/#@#/\t{layout_text}" for tgt_text, layout_text in zip(tgt_texts, layout.texts)]
-            layout.texts = np.array(tgt_texts)
+            layout.ocr_texts = np.array(tgt_texts)
 
         # add ocr regions that are not covered by layout
         ocr_regions_to_add = ocr_layout.slice(src_mask)

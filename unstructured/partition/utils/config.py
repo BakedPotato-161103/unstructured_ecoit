@@ -67,6 +67,10 @@ class ENVConfig:
         structure detection model use as input
         """
         return self._get_int("TABLE_IMAGE_CROP_PAD", 0)
+    
+    @property
+    def TABLE_CLEAN_TEXT(self) -> bool:
+        return self._get_bool("TABLE_CLEAN_TEXT", False)
 
     @property
     def TESSERACT_TEXT_HEIGHT_QUANTILE(self) -> float:

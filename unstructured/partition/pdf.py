@@ -1242,6 +1242,7 @@ def document_to_element_list(
 
                 if last_modification_date:
                     element.metadata.last_modified = last_modification_date
+                element.metadata.ocr_text = getattr(layout_element, "ocr_text", None)
                 element.metadata.text_as_html = getattr(layout_element, "text_as_html", None)
                 element.metadata.table_as_cells = getattr(layout_element, "table_as_cells", None)
 
