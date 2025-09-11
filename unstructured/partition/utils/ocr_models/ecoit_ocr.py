@@ -161,8 +161,7 @@ class OCRAgentECOIT(OCRAgent):
                     if ((clause.length() / minimal_cell_height > self.rec_ratio) \
                         or ((x1 - pose > spacing) and (len(clause) > 0)) \
                                 or not self.det_cluster) \
-                                    and not short_word \
-                                        or self.table_mode:
+                                    and not short_word:
                         # print(f"Ratio {clause.length() / minimal_cell_height} too big for {self.rec_ratio} or block is {x1 - pose} far from {spacing}") 
                             concat_boxes.extend(clause.parse())
                             clause.reset()
