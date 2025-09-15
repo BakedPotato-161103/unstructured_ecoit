@@ -271,8 +271,8 @@ def partition_pdf_or_image(
     pdfminer_char_margin: Optional[float] = None,
     pdfminer_line_overlap: Optional[float] = None,
     pdfminer_word_margin: Optional[float] = 0.185,
-    ocr_agent: str = OCR_AGENT_TESSERACT,
-    table_ocr_agent: str = OCR_AGENT_TESSERACT,
+    ocr_agent: str | Any = OCR_AGENT_TESSERACT,
+    table_ocr_agent: str | Any = OCR_AGENT_TESSERACT,
     **kwargs: Any,
 ) -> list[Element]:
     """Parses a pdf or image document into a list of interpreted elements."""
@@ -611,8 +611,8 @@ def _partition_pdf_or_image_local(
     pdf_hi_res_max_pages: Optional[int] = None,
     password: Optional[str] = None,
     pdfminer_config: Optional[PDFMinerConfig] = None,
-    ocr_agent: str = OCR_AGENT_TESSERACT,
-    table_ocr_agent: str = OCR_AGENT_TESSERACT,
+    ocr_agent: str | Any = OCR_AGENT_TESSERACT,
+    table_ocr_agent: str | Any = OCR_AGENT_TESSERACT,
     **kwargs: Any,
 ) -> list[Element]:
     """Partition using package installed locally"""
@@ -956,14 +956,14 @@ def _partition_pdf_or_image_with_ocr_from_image(
     include_page_breaks: bool = False,
     metadata_last_modified: Optional[str] = None,
     sort_mode: str = SORT_MODE_XY_CUT,
-    ocr_agent: str = OCR_AGENT_TESSERACT,
+    ocr_agent: str | Any = OCR_AGENT_TESSERACT,
     **kwargs: Any,
 ) -> list[Element]:
     """Extract `unstructured` elements from an image using OCR and perform partitioning."""
 
     from unstructured.partition.utils.ocr_models.ocr_interface import OCRAgent
-
-    ocr_agent = OCRAgent.get_instance(ocr_agent_module=ocr_agent, language=ocr_languages)
+    if not isinstance(ocr_agent, OCRAgent):
+        ocr_agent = OCRAgent.get_instance(ocr_agent_module=ocr_agent, language=ocr_languages)
     # NOTE(christine): `pytesseract.image_to_string()` returns sorted text
     if ocr_agent.is_text_sorted():
         sort_mode = SORT_MODE_DONT

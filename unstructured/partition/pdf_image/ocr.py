@@ -108,13 +108,13 @@ def process_file_with_ocr(
     extracted_layout: List[TextRegions],
     is_image: bool = False,
     infer_table_structure: bool = False,
-    ocr_agent: str = OCR_AGENT_TESSERACT,
+    ocr_agent: str | OCRAgent = OCR_AGENT_TESSERACT,
     ocr_languages: str = "eng",
     ocr_mode: str = OCRMode.FULL_PAGE.value,
     pdf_image_dpi: int = 200,
     ocr_layout_dumper: Optional[OCRLayoutDumper] = None,
     password: Optional[str] = None,
-    table_ocr_agent: str = OCR_AGENT_TESSERACT,
+    table_ocr_agent: str| OCRAgent = OCR_AGENT_TESSERACT,
 ) -> "DocumentLayout":
     """
     Process OCR data from a given file and supplement the output DocumentLayout
@@ -232,9 +232,13 @@ def supplement_page_layout_with_ocr(
     """
 
     language = ocr_languages
-    if ocr_agent == OCR_AGENT_PADDLE:
-        language = tesseract_to_paddle_language(ocr_languages)
-    _ocr_agent = OCRAgent.get_instance(ocr_agent_module=ocr_agent, language=language)
+    if isinstance(ocr_agent, str):
+        if ocr_agent == OCR_AGENT_PADDLE:
+            language = tesseract_to_paddle_language(ocr_languages)
+        _ocr_agent = OCRAgent.get_instance(ocr_agent_module=ocr_agent, language=language)
+    elif isinstance(ocr_agent, OCRAgent):
+        _ocr_agent = ocr_agent
+
     # print(type(_ocr_agent))
     if ocr_mode == OCRMode.FULL_PAGE.value:
         ocr_layout = _ocr_agent.get_layout_from_image(image)
@@ -273,14 +277,17 @@ def supplement_page_layout_with_ocr(
     # Note(yuming): use the OCR data from entire page OCR for table extraction
     if infer_table_structure:
         language = ocr_languages
-        if table_ocr_agent == OCR_AGENT_PADDLE:
-            language = tesseract_to_paddle_language(ocr_languages)
-        _table_ocr_agent = OCRAgent.get_instance(
-            ocr_agent_module=table_ocr_agent, language=language
-        ) if table_ocr_agent != ocr_agent else _ocr_agent
-        # Disable all parsing arguments if using ECOIT agent
-        if table_ocr_agent == OCR_AGENT_ECOIT:
-            _table_ocr_agent.table_mode = True
+        if isinstance(table_ocr_agent, str):
+            if table_ocr_agent == OCR_AGENT_PADDLE:
+                language = tesseract_to_paddle_language(ocr_languages)
+            _table_ocr_agent = OCRAgent.get_instance(
+                ocr_agent_module=table_ocr_agent, language=language
+            ) if table_ocr_agent != ocr_agent else _ocr_agent
+            # Disable all parsing arguments if using ECOIT agent
+            if table_ocr_agent == OCR_AGENT_ECOIT:
+                _table_ocr_agent.table_mode = True
+        elif isinstance(table_ocr_agent, OCRAgent): 
+            _table_ocr_agent = table_ocr_agent
         from unstructured_inference.models import tables
 
         tables.load_agent()
@@ -294,8 +301,6 @@ def supplement_page_layout_with_ocr(
             ocr_agent=_table_ocr_agent,
             extracted_regions=extracted_regions,
         )
-        if table_ocr_agent == OCR_AGENT_ECOIT:
-            _table_ocr_agent.table_mode = False
     return page_layout
 
 

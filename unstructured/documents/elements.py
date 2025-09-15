@@ -517,6 +517,7 @@ class ConsolidationStrategy(enum.Enum):
             "sent_to": cls.FIRST,
             "signature": cls.FIRST,
             "subject": cls.FIRST,
+            "ocr_text": cls.STRING_CONCATENATE,
             "text_as_html": cls.STRING_CONCATENATE,
             "table_as_cells": cls.FIRST,  # -- only occurs in Table --
             "url": cls.FIRST,
