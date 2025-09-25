@@ -116,11 +116,13 @@ numpy==2.2.6
     #   unstructured-inference
 omegaconf==2.3.0
     # via effdet
-onnx==1.18.0
+# Commented
+# onnx==1.18.0
     # via
     #   -r ./extra-pdf-image.in
     #   unstructured-inference
-onnxruntime==1.22.1
+# Switched to GPU since its better
+onnxruntime-gpu
     # via
     #   -r ./extra-pdf-image.in
     #   unstructured-inference
