@@ -2,7 +2,7 @@
 -c base.txt
 
 onnx>=1.17.0
-onnxruntime>=1.19.0
+onnxruntime-gpu
 pdf2image
 pdfminer.six
 pikepdf
